@@ -1,10 +1,10 @@
 <div align="center">
   <img src="assets/icons/wand.svg" width="56" alt="" />
   <h1>motion-ui</h1>
-  <p><strong>Drop Framer Motion into your project and build professional, animated UI from 21st.dev — with you in control, or fully on autopilot.</strong></p>
+  <p><strong>Drop the right animation engine — Framer Motion, GSAP, anime.js, or Three.js — into your project and build professional, animated UI from 21st.dev, with you in control or fully on autopilot.</strong></p>
 </div>
 
-Most "add some animation" requests end one of two ways: a half-installed dependency that breaks the build, or motion bolted on so heavily it feels cheap. **motion-ui** does it properly. It first checks whether your project can even host Framer Motion, installs it the right way for your package manager, then builds polished components sourced from **21st.dev** — using the 21st.dev **Magic MCP** when it's connected, and built-in 21st-style recipes when it isn't. You stay in control by default; one flag hands the whole job to the AI.
+Most "add some animation" requests end one of two ways: a half-installed dependency that breaks the build, or motion bolted on so heavily it feels cheap. **motion-ui** does it properly. It first checks your stack, **picks an engine that actually fits it**, installs it the right way for your package manager, then builds polished components sourced from **21st.dev** — using the 21st.dev **Magic MCP** when it's connected, and built-in recipes when it isn't. You stay in control by default; one flag hands the whole job to the AI.
 
 Built for **Claude Code** (Windows / macOS / Linux).
 
@@ -12,11 +12,12 @@ Built for **Claude Code** (Windows / macOS / Linux).
 
 ## <img src="assets/icons/sparkles.svg" width="20" align="absmiddle" alt="" /> What it does
 
-- **Compatibility gate first** — detects your stack (React, Next.js, Vite, Remix, Astro), package manager, Tailwind, and any existing motion install *before* touching anything. Rejects unsupported stacks with the right alternative (Vue → `motion-v`, Svelte → built-in transitions).
-- **Clean install** — adds the modern `motion` package with the correct command for npm / pnpm / yarn / bun, and respects a legacy `framer-motion` install if you already have one.
-- **Hybrid 21st.dev sourcing** — uses the **Magic MCP** to fetch/generate real components when it's connected; falls back to built-in 21st-style Tailwind + `motion/react` recipes when it isn't. Never blocks.
-- **Two control modes** — **Confirm** (default): proposes every step and waits for your yes. **Auto** (`--auto`, opt-in): detect → install → design → apply end-to-end, no stops.
-- **Quality baked in** — every component honors `prefers-reduced-motion`, animates only transform/opacity, stays accessible, and matches your existing design tokens.
+- **Four engines, matched to your stack** — **Framer Motion** (React declarative motion), **GSAP** (timelines + ScrollTrigger), **anime.js v4** (lightweight), and **Three.js** (3D/WebGL). GSAP, anime.js, and Three.js run in *any* JS project — React, Next.js, Vite, Vue, Svelte, Astro, or vanilla; Framer Motion is React-only.
+- **Compatibility gate first** — detects your stack, package manager, TypeScript, Tailwind, and any existing install *before* touching anything, then reports which engines are usable. No more blanket "React or bust" — a Vue or vanilla project still gets GSAP, anime.js, and Three.js.
+- **Clean install** — the correct command for npm / pnpm / yarn / bun, with the right extras auto-added (`@gsap/react`, `@react-three/fiber` + `drei`, `@types/*` on TypeScript). Respects a legacy `framer-motion` install if you already have one.
+- **Hybrid 21st.dev sourcing** — uses the **Magic MCP** to fetch/generate real components when it's connected; falls back to built-in recipe cookbooks when it isn't. Never blocks.
+- **Two control modes** — **Confirm** (default): proposes every step and waits for your yes. **Auto** (`--auto`, opt-in): detect → pick engine → install → design → apply end-to-end, no stops.
+- **Quality baked in** — every component honors `prefers-reduced-motion` (idle 3D loops paused too), animates only transform/opacity for 2D, disposes GPU resources for Three.js, stays accessible, and matches your existing design tokens.
 
 ---
 
@@ -68,6 +69,9 @@ Just ask, from inside a project:
 
 - *"add animations to this landing page"*
 - *"install framer motion and make this look professional"*
+- *"add a scroll-triggered reveal with GSAP"*
+- *"animate this SVG with anime.js"*
+- *"drop a 3D hero into this page with Three.js"*
 - *"animate the hero and feature grid using 21st.dev"*
 
 **Full control (default):** it proposes the install and each component, and waits for your approval at every gate.
@@ -82,14 +86,14 @@ add a polished animated pricing section --auto
 
 ## <img src="assets/icons/settings.svg" width="20" align="absmiddle" alt="" /> How it works
 
-**Detect compatibility → Install Framer Motion → Source components (Magic MCP or fallback) → Apply & verify.**
+**Detect compatibility → Pick the engine → Install → Source components (Magic MCP or fallback) → Apply & verify.**
 
-The compatibility gate is the point: Framer Motion is React-only, so motion-ui never installs into a project that can't use it, and tells you the right alternative when it can't. Sourcing is hybrid so the skill is useful whether or not you've connected Magic, and the autonomy is a single explicit flag so "full AI control" never happens by accident.
+The compatibility gate is the point: motion-ui only installs an engine your stack can actually use, and picks by the job — Framer Motion for React component motion, GSAP for scroll/timeline work, anime.js for a light touch, Three.js for 3D. Sourcing is hybrid so the skill is useful whether or not you've connected Magic, and the autonomy is a single explicit flag so "full AI control" never happens by accident.
 
-Full details: [`motion-ui/SKILL.md`](motion-ui/SKILL.md) · animation cookbook: [`references/motion-patterns.md`](motion-ui/references/motion-patterns.md) · sourcing & fallback components: [`references/21st-components.md`](motion-ui/references/21st-components.md).
+Full details: [`motion-ui/SKILL.md`](motion-ui/SKILL.md) · Framer Motion cookbook: [`references/motion-patterns.md`](motion-ui/references/motion-patterns.md) · GSAP · anime.js · Three.js cookbook: [`references/animation-libraries.md`](motion-ui/references/animation-libraries.md) · sourcing & fallback components: [`references/21st-components.md`](motion-ui/references/21st-components.md).
 
 ---
 
 ## <img src="assets/icons/file.svg" width="20" align="absmiddle" alt="" /> License
 
-[MIT](LICENSE) — animation patterns built on [Framer Motion](https://motion.dev); components sourced from [21st.dev](https://21st.dev).
+[MIT](LICENSE) — animation patterns built on [Framer Motion](https://motion.dev), [GSAP](https://gsap.com), [anime.js](https://animejs.com), and [Three.js](https://threejs.org); components sourced from [21st.dev](https://21st.dev).

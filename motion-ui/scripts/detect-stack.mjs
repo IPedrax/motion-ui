@@ -2,10 +2,16 @@
 /**
  * motion-ui stack detector.
  * Inspects the project at CWD (or argv[2]) and prints a JSON report describing
- * whether Framer Motion (the `motion` package) can be installed and how.
+ * which animation libraries can be installed and how.
+ *
+ * Libraries covered:
+ *   - framer-motion (`motion`)  — React only.
+ *   - gsap                      — any JS project (extra `@gsap/react` hook in React).
+ *   - anime  (`animejs` v4)     — any JS project.
+ *   - three                     — any JS project (extra r3f + drei in React).
  *
  * Usage: node detect-stack.mjs [projectDir]
- * Exit codes: 0 = report printed (check JSON `.compatible`), 1 = no package.json found.
+ * Exit codes: 0 = report printed (check JSON `.compatible`), 1 = no/invalid package.json.
  */
 import { readFileSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -16,7 +22,7 @@ const pkgPath = join(dir, "package.json");
 if (!existsSync(pkgPath)) {
   console.log(JSON.stringify({
     compatible: false,
-    reason: "No package.json found — not a JS/TS project. Framer Motion needs npm-based tooling.",
+    reason: "No package.json found — not a JS/TS project. These libraries install via npm.",
     dir,
   }, null, 2));
   process.exit(1);
@@ -41,56 +47,91 @@ else if (existsSync(join(dir, "bun.lockb")) || existsSync(join(dir, "bun.lock"))
 else if (existsSync(join(dir, "package-lock.json"))) pm = "npm";
 else if (typeof pkg.packageManager === "string") pm = pkg.packageManager.split("@")[0];
 
-const installCmd = {
-  npm: "npm install motion",
-  pnpm: "pnpm add motion",
-  yarn: "yarn add motion",
-  bun: "bun add motion",
-}[pm] || "npm install motion";
+// `add <pkgs>` for the detected package manager.
+const add = (pkgs) => `${{ npm: "npm install", pnpm: "pnpm add", yarn: "yarn add", bun: "bun add" }[pm] || "npm install"} ${pkgs}`;
 
-// --- Framework detection (supported set: React, Next, Vite, Remix, Astro) ---
+// --- Stack signals ---
 const hasReact = has("react") || has("react-dom");
+const hasTypeScript = has("typescript") || existsSync(join(dir, "tsconfig.json"));
+const hasTailwind = has("tailwindcss");
+
+// --- Framework detection (label only; every framework can host gsap/anime/three) ---
 let framework = null;
 if (has("next")) framework = "next";
 else if (has("@remix-run/react") || has("@remix-run/node")) framework = "remix";
 else if (has("astro")) framework = "astro";
+else if (has("nuxt") || has("vue")) framework = "vue";
+else if (has("@sveltejs/kit") || has("svelte")) framework = "svelte";
+else if (has("@angular/core")) framework = "angular";
 else if (has("vite")) framework = "vite";
 else if (hasReact) framework = "react";
+else framework = "vanilla";
 
-// --- Motion already present? (current `motion` pkg or legacy `framer-motion`) ---
-const motionInstalled = has("motion") || has("framer-motion");
-const motionPkg = has("framer-motion") && !has("motion") ? "framer-motion (legacy)" : (has("motion") ? "motion" : null);
-const importPath = has("framer-motion") && !has("motion") ? "framer-motion" : "motion/react";
+// --- Per-library plans ---------------------------------------------------
+// framer-motion: React-only. Legacy `framer-motion` import differs from current `motion`.
+const framerInstalled = has("motion") || has("framer-motion");
+const framerLegacy = has("framer-motion") && !has("motion");
+const framer = {
+  usable: hasReact,
+  installed: framerInstalled,
+  install: hasReact ? (framerInstalled ? null : add("motion")) : null,
+  import: framerLegacy ? "framer-motion" : "motion/react",
+  note: hasReact
+    ? "Declarative React motion: layout, gestures, AnimatePresence."
+    : "React-only — not usable here. Use gsap or anime instead for this stack.",
+};
 
-// --- Tailwind (affects which 21st.dev recipes apply) ---
-const hasTailwind = has("tailwindcss");
+// gsap: framework-agnostic. `@gsap/react` adds the useGSAP() hook in React.
+const gsapInstalled = has("gsap");
+const gsapPkgs = ["gsap", ...(hasReact && !has("@gsap/react") ? ["@gsap/react"] : [])];
+const gsap = {
+  usable: true,
+  installed: gsapInstalled,
+  install: gsapInstalled ? (hasReact && !has("@gsap/react") ? add("@gsap/react") : null) : add(gsapPkgs.join(" ")),
+  import: "gsap",
+  reactHook: hasReact ? "@gsap/react → useGSAP()" : null,
+  note: "Timelines, ScrollTrigger, SVG. Best for complex sequencing / scroll work. Plugins (ScrollTrigger, etc.) ship free in the core package.",
+};
 
-// --- Compatibility verdict ---
-let compatible = false;
-let reason = "";
+// anime v4: framework-agnostic, named ESM exports.
+const animeInstalled = has("animejs");
+const anime = {
+  usable: true,
+  installed: animeInstalled,
+  install: animeInstalled ? null : add(hasTypeScript ? "animejs @types/animejs" : "animejs"),
+  import: "animejs",
+  note: "v4 named exports: import { animate, createTimeline, stagger, onScroll } from 'animejs'. Lightweight; great for simple property/SVG animation.",
+};
+
+// three: framework-agnostic. React uses @react-three/fiber + drei.
+const threeInstalled = has("three");
+const threePkgs = hasReact
+  ? ["three", "@react-three/fiber", "@react-three/drei", ...(hasTypeScript ? ["@types/three"] : [])]
+  : ["three", ...(hasTypeScript ? ["@types/three"] : [])];
+const three = {
+  usable: true,
+  installed: threeInstalled,
+  install: threeInstalled ? null : add(threePkgs.join(" ")),
+  import: "three",
+  reactRenderer: hasReact ? "@react-three/fiber (<Canvas>, useFrame) + @react-three/drei" : null,
+  note: "3D / WebGL scenes, particles, shaders. Different category from 2D UI motion.",
+};
+
+const libraries = { "framer-motion": framer, gsap, anime, three };
+
+// --- Compatibility verdict ----------------------------------------------
+// Any valid JS project can host gsap/anime/three, so it's always compatible.
+const compatible = true;
 const warnings = [];
-
-if (framework && (hasReact || framework === "astro")) {
-  compatible = true;
-  reason = `Detected ${framework}${hasReact ? " + React" : ""}. Framer Motion (motion) is supported.`;
-  if (framework === "astro" && !hasReact) {
-    warnings.push("Astro detected without React. motion works inside React islands — add @astrojs/react, or use CSS/View Transitions for plain .astro files.");
-  }
-  if (framework === "vite" && !hasReact) {
-    warnings.push("Vite without React. If this is a Vue app, use 'motion-v' instead; Svelte has built-in transitions.");
-    compatible = hasReact;
-    if (!compatible) reason = "Vite project without React — motion (Framer Motion) is React-only.";
-  }
-} else if (has("vue")) {
-  reason = "Vue detected. Framer Motion is React-only — use 'motion-v' (npm i motion-v) instead.";
-  warnings.push("Suggested: motion-v");
-} else if (has("svelte")) {
-  reason = "Svelte detected. Use Svelte's built-in transition/motion stores instead of Framer Motion.";
-} else if (has("@angular/core")) {
-  reason = "Angular detected. Use Angular animations (@angular/animations) instead of Framer Motion.";
-} else {
-  reason = "No supported React-based framework found (need react, next, remix, astro+react, or vite+react).";
+if (!hasReact) {
+  warnings.push(`No React detected (${framework}). Framer Motion is unavailable — gsap, anime, and three all work here.`);
 }
+if (framework === "astro" && !hasReact) {
+  warnings.push("Astro without React: run gsap/anime/three inside a client-side script or island (client:load).");
+}
+const reason = hasReact
+  ? `Detected ${framework}${framework === "react" ? "" : " + React"}. All four libraries are available.`
+  : `Detected ${framework}. gsap, anime, and three are available; Framer Motion is React-only.`;
 
 console.log(JSON.stringify({
   compatible,
@@ -98,11 +139,9 @@ console.log(JSON.stringify({
   dir,
   framework,
   hasReact,
+  hasTypeScript,
   hasTailwind,
   packageManager: pm,
-  installCommand: installCmd,
-  motionInstalled,
-  motionPackage: motionPkg,
-  importPath,
+  libraries,
   warnings,
 }, null, 2));
