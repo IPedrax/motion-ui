@@ -97,3 +97,6 @@ Full details: [`motion-ui/SKILL.md`](motion-ui/SKILL.md) · Framer Motion cookbo
 ## <img src="assets/icons/file.svg" width="20" align="absmiddle" alt="" /> License
 
 [MIT](LICENSE) — animation patterns built on [Framer Motion](https://motion.dev), [GSAP](https://gsap.com), [anime.js](https://animejs.com), and [Three.js](https://threejs.org); components sourced from [21st.dev](https://21st.dev).
+---
+
+Built by [Pedro Medeiros](https://ipedrax.com.br). I build production LLM applications for companies too: multi-provider backends, the infrastructure under them, and the billing on top. Available for contract work, remote from Brazil on US hours. [pedro.medeiros@ipedrax.com.br](mailto:pedro.medeiros@ipedrax.com.br)
